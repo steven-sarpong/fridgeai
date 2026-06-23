@@ -395,62 +395,68 @@ function AddItemModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
           <div className="bg-gray-50 rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-gray-500">
-                Nährwerte pro 100{nutrition === null ? "" : quantityUnit === "ml" ? "ml" : "g"}
-                {nutritionEstimated && (
+                Nährwerte pro 100{quantityUnit === "ml" ? "ml" : "g"}
+                {nutritionEstimated && name.trim() && (
                   <span className="ml-1.5 pill bg-amber-100 text-amber-700">geschätzt</span>
                 )}
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!nutrition) ensureNutrition();
-                  setEditingNutrition((v) => !v);
-                }}
-                className="text-xs text-brand-600 font-medium flex items-center gap-1"
-              >
-                <Pencil size={12} /> {editingNutrition ? "Fertig" : "Anpassen"}
-              </button>
+              {name.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!nutrition) ensureNutrition();
+                    setEditingNutrition((v) => !v);
+                  }}
+                  className="text-xs text-brand-600 font-medium flex items-center gap-1"
+                >
+                  <Pencil size={12} /> {editingNutrition ? "Fertig" : "Anpassen"}
+                </button>
+              )}
             </div>
 
-            {(() => {
-              const display = nutrition ?? getFallbackNutrition(category);
-              if (!editingNutrition) {
+            {!name.trim() ? (
+              <p className="text-xs text-gray-400 py-2 text-center">
+                Gib einen Namen ein, um Nährwerte zu sehen.
+              </p>
+            ) : (
+              (() => {
+                const display = nutrition ?? findFoodByName(name)?.nutritionPer100g ?? getFallbackNutrition(category);
+                if (!editingNutrition) {
+                  return (
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <NutritionMini label="kcal" value={display.calories} />
+                      <NutritionMini label="Protein" value={`${display.protein}g`} />
+                      <NutritionMini label="Kohlenh." value={`${display.carbs}g`} />
+                      <NutritionMini label="Fett" value={`${display.fat}g`} />
+                    </div>
+                  );
+                }
                 return (
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <NutritionMini label="kcal" value={display.calories} />
-                    <NutritionMini label="Protein" value={`${display.protein}g`} />
-                    <NutritionMini label="Kohlenh." value={`${display.carbs}g`} />
-                    <NutritionMini label="Fett" value={`${display.fat}g`} />
+                  <div className="grid grid-cols-4 gap-2">
+                    <NutritionEditField
+                      label="kcal"
+                      value={display.calories}
+                      onChange={(v) => setNutrition({ ...display, calories: v })}
+                    />
+                    <NutritionEditField
+                      label="Protein"
+                      value={display.protein}
+                      onChange={(v) => setNutrition({ ...display, protein: v })}
+                    />
+                    <NutritionEditField
+                      label="Kohlenh."
+                      value={display.carbs}
+                      onChange={(v) => setNutrition({ ...display, carbs: v })}
+                    />
+                    <NutritionEditField
+                      label="Fett"
+                      value={display.fat}
+                      onChange={(v) => setNutrition({ ...display, fat: v })}
+                    />
                   </div>
                 );
-              }
-              return (
-                <div className="grid grid-cols-4 gap-2">
-                  <NutritionEditField
-                    label="kcal"
-                    value={display.calories}
-                    onChange={(v) =>
-                      setNutrition({ ...display, calories: v })
-                    }
-                  />
-                  <NutritionEditField
-                    label="Protein"
-                    value={display.protein}
-                    onChange={(v) => setNutrition({ ...display, protein: v })}
-                  />
-                  <NutritionEditField
-                    label="Kohlenh."
-                    value={display.carbs}
-                    onChange={(v) => setNutrition({ ...display, carbs: v })}
-                  />
-                  <NutritionEditField
-                    label="Fett"
-                    value={display.fat}
-                    onChange={(v) => setNutrition({ ...display, fat: v })}
-                  />
-                </div>
-              );
-            })()}
+              })()
+            )}
 
             {totals && (
               <div className="mt-3 pt-3 border-t border-gray-200">

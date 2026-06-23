@@ -72,6 +72,32 @@ function drawToJpegDataUrl(img: HTMLImageElement): string {
   return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
 }
 
+function isHeicFile(file: File): boolean {
+  const lowerName = file.name.toLowerCase();
+  return (
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    lowerName.endsWith(".heic") ||
+    lowerName.endsWith(".heif")
+  );
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new ImageProcessingError(message)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
 /**
  * Validiert und verarbeitet eine hochgeladene Bilddatei.
  * Wirft ImageProcessingError mit einer für Nutzer verständlichen Meldung.
@@ -89,15 +115,27 @@ export async function processImageFile(file: File): Promise<string> {
     );
   }
 
+  const heic = isHeicFile(file);
   const rawDataUrl = await readFileAsDataUrl(file);
 
   try {
-    const img = await loadImage(rawDataUrl);
+    // Manche Browser (v.a. Chrome/Firefox) können HEIC nicht decodieren und hängen
+    // dabei eher, statt sofort einen Fehler zu werfen – daher mit Timeout abbrechen.
+    const img = await withTimeout(
+      loadImage(rawDataUrl),
+      heic ? 6000 : 15000,
+      "Das Bild konnte nicht geladen werden (Zeitüberschreitung)."
+    );
     return drawToJpegDataUrl(img);
   } catch (err) {
+    if (heic) {
+      throw new ImageProcessingError(
+        "HEIC-Fotos werden von diesem Browser nicht unterstützt. Nutze die Kamera-Funktion direkt in der App, oder stelle dein iPhone unter Einstellungen → Kamera → Formate auf \"Aufnahmekompatibilität – höchste\" (speichert als JPG)."
+      );
+    }
     if (err instanceof ImageProcessingError) throw err;
     throw new ImageProcessingError(
-      "Dieses Bildformat (z. B. manche HEIC-Varianten) kann von diesem Browser nicht angezeigt werden. Bitte als JPG/PNG/WEBP erneut versuchen."
+      "Dieses Bild konnte nicht verarbeitet werden. Bitte als JPG, PNG oder WEBP erneut versuchen."
     );
   }
 }
