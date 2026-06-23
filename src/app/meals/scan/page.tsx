@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, AlertCircle, Flame, Beef, Wheat, Droplet } from "lucide-react";
+import { Loader2, AlertCircle, Flame, Beef, Wheat, Droplet, CheckCircle2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import CameraCapture from "@/components/CameraCapture";
 import { MealScanItem } from "@/types";
 import { addMeal } from "@/lib/storage";
 
-type Step = "capture" | "analyzing" | "review" | "error";
+type Step = "capture" | "analyzing" | "review" | "error" | "saved";
 
 export default function MealScanPage() {
   const router = useRouter();
@@ -72,7 +72,8 @@ export default function MealScanPage() {
       eatenAt: new Date().toISOString(),
       source: "scan",
     });
-    router.push("/meals");
+    setStep("saved");
+    setTimeout(() => router.push("/meals"), 900);
   }
 
   function reset() {
@@ -80,6 +81,11 @@ export default function MealScanPage() {
     setImage(null);
     setErrorMsg(null);
     setItems([]);
+  }
+
+  function handleCaptureError(message: string) {
+    setErrorMsg(message);
+    setStep("error");
   }
 
   return (
@@ -90,7 +96,9 @@ export default function MealScanPage() {
       />
 
       <div className="px-5">
-        {step === "capture" && <CameraCapture onCapture={handleCapture} />}
+        {step === "capture" && (
+          <CameraCapture onCapture={handleCapture} onError={handleCaptureError} />
+        )}
 
         {step === "analyzing" && (
           <div className="space-y-3">
@@ -113,6 +121,14 @@ export default function MealScanPage() {
             <button onClick={reset} className="btn-primary w-full">
               Erneut versuchen
             </button>
+          </div>
+        )}
+
+        {step === "saved" && (
+          <div className="card p-8 flex flex-col items-center text-center gap-2">
+            <CheckCircle2 size={36} className="text-brand-600" />
+            <p className="text-sm font-medium text-brand-900">Gespeichert!</p>
+            <p className="text-xs text-gray-400">Du wirst zu deinen Mahlzeiten weitergeleitet…</p>
           </div>
         )}
 

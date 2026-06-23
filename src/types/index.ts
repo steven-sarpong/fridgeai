@@ -23,15 +23,28 @@ export const FOOD_CATEGORIES: FoodCategory[] = [
   "Sonstiges",
 ];
 
+export interface NutritionPer100g {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+  sugar?: number;
+}
+
 export interface FridgeItem {
   id: string;
   name: string;
   category: FoodCategory;
-  quantity?: string;
+  quantity?: string; // freie Anzeige-Menge (z.B. aus KI-Scan: "4 Stück")
+  quantityValue?: number; // numerische Menge für Nährwert-Berechnung
+  quantityUnit?: string; // g, ml, Stück, Packung ...
   expiryDate?: string; // ISO-Datum, optional
   confidence?: number; // 0-1, gesetzt wenn per KI-Scan erkannt
   addedAt: string; // ISO-Datum
   source: "scan" | "manual";
+  nutritionPer100g?: NutritionPer100g;
+  nutritionEstimated?: boolean; // true, wenn Werte aus Fallback-Durchschnitt stammen statt aus der DB
 }
 
 export interface DetectedItem {

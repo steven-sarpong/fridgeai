@@ -128,27 +128,22 @@ function safeJsonParse<T>(raw: string): T {
 
 // ---------- Kühlschrank-Scan ----------
 
-const SCAN_SYSTEM_PROMPT = `Du bist ein präziser Lebensmittel-Erkennungsassistent für eine Kühlschrank-Tracking-App.
-Analysiere das übermittelte Foto eines Kühlschranks oder einzelner Lebensmittel.
-Antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format, ohne zusätzlichen Text:
+const SCAN_SYSTEM_PROMPT = `Analysiere dieses Bild eines Kühlschranks, einer Einkaufstüte oder einzelner Lebensmittel. Erkenne alle sichtbaren Lebensmittel so genau wie möglich. Gib ausschließlich valides JSON zurück. Keine Erklärung, kein Markdown.
 
+Format:
 {
   "detected_items": [
     {
-      "name": "Tomaten",
-      "category": "Gemüse",
-      "confidence": 0.91,
-      "estimated_quantity": "4 Stück"
+      "name": "Lebensmittelname auf Deutsch",
+      "category": "Gemüse | Obst | Fleisch | Fisch | Milchprodukte | Getränke | Tiefkühl | Vorrat | Sonstiges",
+      "estimated_quantity": "geschätzte Menge",
+      "confidence": 0.0
     }
   ]
 }
 
-Regeln:
-- "category" muss exakt einer dieser Werte sein: Gemüse, Obst, Fleisch, Fisch, Milchprodukte, Getränke, Tiefkühl, Vorrat, Sonstiges
-- "confidence" ist eine Zahl zwischen 0 und 1
-- "estimated_quantity" ist eine grobe, für Laien verständliche Schätzung (z. B. "4 Stück", "ca. 500g", "1 Packung")
-- Erkenne nur tatsächlich im Bild sichtbare Lebensmittel, keine Mehrfachnennungen
-- Wenn nichts erkennbar ist, gib ein leeres "detected_items"-Array zurück`;
+Wenn du unsicher bist, nutze realistische Namen und setze die confidence entsprechend niedriger.
+Erkenne nur tatsächlich im Bild sichtbare Lebensmittel, keine Mehrfachnennungen. Wenn nichts erkennbar ist, gib ein leeres "detected_items"-Array zurück.`;
 
 export async function analyzeFridgeImage(imageBase64DataUrl: string) {
   const primaryModel = getEnv("OPENROUTER_PRIMARY_MODEL", "google/gemini-2.5-flash");

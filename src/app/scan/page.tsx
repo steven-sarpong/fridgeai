@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Check, X, Pencil, AlertCircle } from "lucide-react";
+import { Loader2, Check, X, Pencil, AlertCircle, CheckCircle2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import CameraCapture from "@/components/CameraCapture";
 import { DetectedItem, FOOD_CATEGORIES, FoodCategory } from "@/types";
 import { addFridgeItem } from "@/lib/storage";
 import { CATEGORY_EMOJI } from "@/lib/category-style";
 
-type Step = "capture" | "analyzing" | "review" | "error";
+type Step = "capture" | "analyzing" | "review" | "error" | "saved";
 
 interface ReviewItem extends DetectedItem {
   keep: boolean;
@@ -75,7 +75,13 @@ export default function ScanPage() {
           source: "scan",
         });
       });
-    router.push("/fridge");
+    setStep("saved");
+    setTimeout(() => router.push("/fridge"), 900);
+  }
+
+  function handleCaptureError(message: string) {
+    setErrorMsg(message);
+    setStep("error");
   }
 
   function reset() {
@@ -93,7 +99,9 @@ export default function ScanPage() {
       />
 
       <div className="px-5">
-        {step === "capture" && <CameraCapture onCapture={handleCapture} />}
+        {step === "capture" && (
+          <CameraCapture onCapture={handleCapture} onError={handleCaptureError} />
+        )}
 
         {step === "analyzing" && (
           <div className="space-y-3">
@@ -116,6 +124,14 @@ export default function ScanPage() {
             <button onClick={reset} className="btn-primary w-full">
               Erneut versuchen
             </button>
+          </div>
+        )}
+
+        {step === "saved" && (
+          <div className="card p-8 flex flex-col items-center text-center gap-2">
+            <CheckCircle2 size={36} className="text-brand-600" />
+            <p className="text-sm font-medium text-brand-900">Gespeichert!</p>
+            <p className="text-xs text-gray-400">Du wirst zu deinem Kühlschrank weitergeleitet…</p>
           </div>
         )}
 
