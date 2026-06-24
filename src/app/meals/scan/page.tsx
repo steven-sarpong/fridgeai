@@ -71,6 +71,9 @@ export default function MealScanPage() {
       fat: Number(fat) || 0,
       eatenAt: new Date().toISOString(),
       source: "scan",
+      confidence,
+      items,
+      modelUsed: modelUsed || undefined,
     });
     setStep("saved");
     setTimeout(() => router.push("/meals"), 900);

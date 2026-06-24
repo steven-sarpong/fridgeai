@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, AlertTriangle, X, Search, CheckCircle2, Pencil } from "lucide-react";
+import Link from "next/link";
+import { Plus, Trash2, AlertTriangle, X, Search, CheckCircle2, Pencil, ScanLine } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import DetailSheet from "@/components/DetailSheet";
 import {
   getFridgeItems,
   addFridgeItem,
@@ -17,6 +19,7 @@ export default function FridgePage() {
   const [items, setItems] = useState<FridgeItem[]>([]);
   const [filter, setFilter] = useState<FoodCategory | "Alle">("Alle");
   const [showAdd, setShowAdd] = useState(false);
+  const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
 
   function reload() {
     setItems(getFridgeItems());
@@ -47,17 +50,42 @@ export default function FridgePage() {
         title="Meine Lebensmittel"
         subtitle={`${items.length} Einträge im Kühlschrank`}
         right={
-          <button
-            onClick={() => setShowAdd(true)}
-            className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-card"
-            aria-label="Lebensmittel hinzufügen"
-          >
-            <Plus size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/scan"
+              className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-card"
+              aria-label="Kühlschrank scannen"
+            >
+              <ScanLine size={20} />
+            </Link>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="w-10 h-10 rounded-full bg-white text-brand-700 border border-brand-200 flex items-center justify-center shadow-card"
+              aria-label="Lebensmittel hinzufügen"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
         }
       />
 
       <div className="px-5">
+        {/* Schneller Scan-Hinweis */}
+        <Link
+          href="/scan"
+          className="block bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl2 p-4 text-white shadow-card active:scale-[0.98] transition-transform mb-5"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold">Kühlschrank per Foto erfassen</p>
+              <p className="text-xs text-brand-100 mt-0.5">KI erkennt deine Zutaten automatisch</p>
+            </div>
+            <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+              <ScanLine size={22} />
+            </span>
+          </div>
+        </Link>
+
         {/* Kategorie-Filter */}
         <div className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1">
           {(["Alle", ...FOOD_CATEGORIES] as const).map((cat) => (
@@ -88,7 +116,12 @@ export default function FridgePage() {
                 </p>
                 <div className="space-y-2">
                   {catItems.map((item) => (
-                    <FridgeRow key={item.id} item={item} onChanged={reload} />
+                    <FridgeRow
+                      key={item.id}
+                      item={item}
+                      onChanged={reload}
+                      onOpenDetail={() => setDetailItem(item)}
+                    />
                   ))}
                 </div>
               </div>
@@ -98,11 +131,29 @@ export default function FridgePage() {
       </div>
 
       {showAdd && <AddItemModal onClose={() => setShowAdd(false)} onAdded={reload} />}
+      {detailItem && (
+        <FridgeDetailSheet
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+          onDeleted={() => {
+            setDetailItem(null);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function FridgeRow({ item, onChanged }: { item: FridgeItem; onChanged: () => void }) {
+function FridgeRow({
+  item,
+  onChanged,
+  onOpenDetail,
+}: {
+  item: FridgeItem;
+  onChanged: () => void;
+  onOpenDetail: () => void;
+}) {
   const expiresIn = item.expiryDate ? daysUntil(item.expiryDate) : null;
   const isSoon = expiresIn !== null && expiresIn <= 3;
   const totalCalories =
@@ -112,29 +163,35 @@ function FridgeRow({ item, onChanged }: { item: FridgeItem; onChanged: () => voi
 
   return (
     <div className="card p-3 flex items-center gap-3">
-      <span className="text-2xl">{CATEGORY_EMOJI[item.category]}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-brand-900 truncate">{item.name}</p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {item.quantity && <span className="text-xs text-gray-400">{item.quantity}</span>}
-          {totalCalories !== null && (
-            <span className="pill bg-accent-100 text-accent-600">{totalCalories} kcal</span>
-          )}
-          {expiresIn !== null && (
-            <span
-              className={`pill ${
-                isSoon ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"
-              } flex items-center gap-1`}
-            >
-              {isSoon && <AlertTriangle size={11} />}
-              {expiresIn >= 0 ? `noch ${expiresIn}d` : `${Math.abs(expiresIn)}d abgelaufen`}
-            </span>
-          )}
-          {item.source === "scan" && (
-            <span className={`pill ${CATEGORY_COLOR[item.category]}`}>KI-Scan</span>
-          )}
+      <button
+        onClick={onOpenDetail}
+        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        type="button"
+      >
+        <span className="text-2xl">{CATEGORY_EMOJI[item.category]}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-brand-900 truncate">{item.name}</p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            {item.quantity && <span className="text-xs text-gray-400">{item.quantity}</span>}
+            {totalCalories !== null && (
+              <span className="pill bg-accent-100 text-accent-600">{totalCalories} kcal</span>
+            )}
+            {expiresIn !== null && (
+              <span
+                className={`pill ${
+                  isSoon ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"
+                } flex items-center gap-1`}
+              >
+                {isSoon && <AlertTriangle size={11} />}
+                {expiresIn >= 0 ? `noch ${expiresIn}d` : `${Math.abs(expiresIn)}d abgelaufen`}
+              </span>
+            )}
+            {item.source === "scan" && (
+              <span className={`pill ${CATEGORY_COLOR[item.category]}`}>KI-Scan</span>
+            )}
+          </div>
         </div>
-      </div>
+      </button>
       <button
         onClick={() => {
           deleteFridgeItem(item.id);
@@ -145,6 +202,148 @@ function FridgeRow({ item, onChanged }: { item: FridgeItem; onChanged: () => voi
       >
         <Trash2 size={16} />
       </button>
+    </div>
+  );
+}
+
+function FridgeDetailSheet({
+  item,
+  onClose,
+  onDeleted,
+}: {
+  item: FridgeItem;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const expiresIn = item.expiryDate ? daysUntil(item.expiryDate) : null;
+  const isSoon = expiresIn !== null && expiresIn <= 3;
+  const totals =
+    item.nutritionPer100g && item.quantityValue
+      ? {
+          calories: Math.round((item.nutritionPer100g.calories * item.quantityValue) / 100),
+          protein: Math.round((item.nutritionPer100g.protein * item.quantityValue) / 100),
+          carbs: Math.round((item.nutritionPer100g.carbs * item.quantityValue) / 100),
+          fat: Math.round((item.nutritionPer100g.fat * item.quantityValue) / 100),
+        }
+      : null;
+
+  return (
+    <DetailSheet title={item.name} onClose={onClose}>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">{CATEGORY_EMOJI[item.category]}</span>
+          <div>
+            <p className="text-sm font-semibold text-brand-900">{item.category}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {item.source === "scan" && (
+                <span className={`pill ${CATEGORY_COLOR[item.category]}`}>KI-Scan</span>
+              )}
+              {item.source === "manual" && <span className="pill bg-gray-100 text-gray-500">Manuell</span>}
+              {typeof item.confidence === "number" && (
+                <span className="pill bg-gray-100 text-gray-500">
+                  Sicherheit: {Math.round(item.confidence * 100)}%
+                </span>
+              )}
+              {item.nutritionEstimated && (
+                <span className="pill bg-amber-100 text-amber-700">Nährwerte geschätzt</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <DetailField label="Menge" value={item.quantity || "—"} />
+          <DetailField
+            label="Haltbar bis"
+            value={
+              item.expiryDate
+                ? `${new Date(item.expiryDate).toLocaleDateString("de-DE")}${
+                    expiresIn !== null
+                      ? isSoon
+                        ? ` (noch ${expiresIn}d)`
+                        : expiresIn < 0
+                          ? ` (${Math.abs(expiresIn)}d abgelaufen)`
+                          : ""
+                      : ""
+                  }`
+                : "—"
+            }
+            warn={isSoon}
+          />
+        </div>
+
+        {item.nutritionPer100g && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-gray-500 mb-2">
+              Nährwerte pro 100{item.quantityUnit === "ml" ? "ml" : "g"}
+            </p>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <NutritionMini label="kcal" value={item.nutritionPer100g.calories} />
+              <NutritionMini label="Protein" value={`${item.nutritionPer100g.protein}g`} />
+              <NutritionMini label="Kohlenh." value={`${item.nutritionPer100g.carbs}g`} />
+              <NutritionMini label="Fett" value={`${item.nutritionPer100g.fat}g`} />
+            </div>
+            {(item.nutritionPer100g.fiber !== undefined || item.nutritionPer100g.sugar !== undefined) && (
+              <div className="grid grid-cols-2 gap-2 text-center mt-2">
+                {item.nutritionPer100g.fiber !== undefined && (
+                  <NutritionMini label="Ballaststoffe" value={`${item.nutritionPer100g.fiber}g`} />
+                )}
+                {item.nutritionPer100g.sugar !== undefined && (
+                  <NutritionMini label="Zucker" value={`${item.nutritionPer100g.sugar}g`} />
+                )}
+              </div>
+            )}
+
+            {totals && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="text-xs font-semibold text-gray-500 mb-2">
+                  Gesamt für {item.quantityValue} {item.quantityUnit}
+                </p>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <NutritionMini label="kcal" value={totals.calories} accent />
+                  <NutritionMini label="Protein" value={`${totals.protein}g`} accent />
+                  <NutritionMini label="Kohlenh." value={`${totals.carbs}g`} accent />
+                  <NutritionMini label="Fett" value={`${totals.fat}g`} accent />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs text-gray-400 text-center">
+          Hinzugefügt am {new Date(item.addedAt).toLocaleDateString("de-DE")}
+        </p>
+
+        <button
+          onClick={() => {
+            deleteFridgeItem(item.id);
+            onDeleted();
+          }}
+          className="btn-secondary w-full text-rose-600 border-rose-200 hover:bg-rose-50 flex items-center justify-center gap-2"
+          type="button"
+        >
+          <Trash2 size={16} /> Löschen
+        </button>
+      </div>
+    </DetailSheet>
+  );
+}
+
+function DetailField({
+  label,
+  value,
+  warn,
+}: {
+  label: string;
+  value: string;
+  warn?: boolean;
+}) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-3">
+      <p className="text-[11px] text-gray-400">{label}</p>
+      <p className={`text-sm font-semibold mt-0.5 ${warn ? "text-amber-700" : "text-brand-900"}`}>
+        {value}
+      </p>
     </div>
   );
 }

@@ -96,6 +96,11 @@ export interface RecipeResult {
   recipes: Recipe[];
 }
 
+export interface MealScanItem {
+  name: string;
+  estimated_quantity?: string;
+}
+
 export interface Meal {
   id: string;
   name: string;
@@ -106,11 +111,9 @@ export interface Meal {
   eatenAt: string; // ISO-Datum/Zeit
   source: "manual" | "recipe" | "scan";
   recipeTitle?: string;
-}
-
-export interface MealScanItem {
-  name: string;
-  estimated_quantity?: string;
+  confidence?: number; // 0-1, gesetzt wenn per KI-Scan erkannt
+  items?: MealScanItem[]; // erkannte Bestandteile, falls per KI-Scan erfasst
+  modelUsed?: string; // genutztes KI-Modell, falls per Scan erfasst
 }
 
 export interface MealScanResult {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Trash2, X, Flame, Beef, Wheat, Droplet, ScanLine, Search } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import DetailSheet from "@/components/DetailSheet";
 import { getMeals, addMeal, deleteMeal, getTodaysTotals } from "@/lib/storage";
 import { Meal } from "@/types";
 import { FoodDbEntry, searchFoodDatabase } from "@/lib/food-database";
@@ -13,6 +14,7 @@ export default function MealsPage() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [showAdd, setShowAdd] = useState(false);
+  const [detailMeal, setDetailMeal] = useState<Meal | null>(null);
 
   function reload() {
     setMeals(getMeals());
@@ -92,7 +94,12 @@ export default function MealsPage() {
                 <p className="text-sm font-semibold text-gray-500 mb-2">{day}</p>
                 <div className="space-y-2">
                   {dayMeals.map((m) => (
-                    <MealRow key={m.id} meal={m} onChanged={reload} />
+                    <MealRow
+                      key={m.id}
+                      meal={m}
+                      onChanged={reload}
+                      onOpenDetail={() => setDetailMeal(m)}
+                    />
                   ))}
                 </div>
               </div>
@@ -102,6 +109,16 @@ export default function MealsPage() {
       </div>
 
       {showAdd && <AddMealModal onClose={() => setShowAdd(false)} onAdded={reload} />}
+      {detailMeal && (
+        <MealDetailSheet
+          meal={detailMeal}
+          onClose={() => setDetailMeal(null)}
+          onDeleted={() => {
+            setDetailMeal(null);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -130,10 +147,22 @@ function Stat({
   );
 }
 
-function MealRow({ meal, onChanged }: { meal: Meal; onChanged: () => void }) {
+function MealRow({
+  meal,
+  onChanged,
+  onOpenDetail,
+}: {
+  meal: Meal;
+  onChanged: () => void;
+  onOpenDetail: () => void;
+}) {
   return (
     <div className="card p-3 flex items-center gap-3">
-      <div className="flex-1 min-w-0">
+      <button
+        onClick={onOpenDetail}
+        className="flex-1 min-w-0 text-left"
+        type="button"
+      >
         <p className="text-sm font-semibold text-brand-900 truncate">{meal.name}</p>
         <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
           <span>
@@ -146,7 +175,7 @@ function MealRow({ meal, onChanged }: { meal: Meal; onChanged: () => void }) {
           {meal.source === "recipe" && <span className="pill bg-brand-50 text-brand-700">Rezept</span>}
           {meal.source === "scan" && <span className="pill bg-accent-100 text-accent-600">KI-Scan</span>}
         </div>
-      </div>
+      </button>
       <button
         onClick={() => {
           deleteMeal(meal.id);
@@ -157,6 +186,109 @@ function MealRow({ meal, onChanged }: { meal: Meal; onChanged: () => void }) {
       >
         <Trash2 size={16} />
       </button>
+    </div>
+  );
+}
+
+function MealDetailSheet({
+  meal,
+  onClose,
+  onDeleted,
+}: {
+  meal: Meal;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  return (
+    <DetailSheet title={meal.name} onClose={onClose}>
+      <div className="space-y-4">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {meal.source === "recipe" && <span className="pill bg-brand-50 text-brand-700">Aus Rezept</span>}
+          {meal.source === "scan" && <span className="pill bg-accent-100 text-accent-600">KI-Scan</span>}
+          {meal.source === "manual" && <span className="pill bg-gray-100 text-gray-500">Manuell</span>}
+          {typeof meal.confidence === "number" && (
+            <span className="pill bg-gray-100 text-gray-500">
+              Sicherheit: {Math.round(meal.confidence * 100)}%
+            </span>
+          )}
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs font-semibold text-gray-500 mb-2">Nährwerte (gesamte Portion)</p>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <NutritionMini label="kcal" value={meal.calories} />
+            <NutritionMini label="Protein" value={`${meal.protein}g`} />
+            <NutritionMini label="Kohlenh." value={`${meal.carbs}g`} />
+            <NutritionMini label="Fett" value={`${meal.fat}g`} />
+          </div>
+        </div>
+
+        {meal.items && meal.items.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-1.5">Erkannte Bestandteile</p>
+            <div className="flex flex-wrap gap-1.5">
+              {meal.items.map((it, i) => (
+                <span key={i} className="pill bg-brand-50 text-brand-700">
+                  {it.name}
+                  {it.estimated_quantity ? ` · ${it.estimated_quantity}` : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {meal.recipeTitle && (
+          <DetailField label="Aus Rezept" value={meal.recipeTitle} />
+        )}
+
+        <DetailField
+          label="Erfasst am"
+          value={new Date(meal.eatenAt).toLocaleString("de-DE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        />
+
+        {meal.modelUsed && <DetailField label="Analysiert mit" value={meal.modelUsed} />}
+
+        <button
+          onClick={() => {
+            deleteMeal(meal.id);
+            onDeleted();
+          }}
+          className="btn-secondary w-full text-rose-600 border-rose-200 hover:bg-rose-50 flex items-center justify-center gap-2"
+          type="button"
+        >
+          <Trash2 size={16} /> Löschen
+        </button>
+      </div>
+    </DetailSheet>
+  );
+}
+
+function NutritionMini({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="rounded-lg py-2 bg-white">
+      <p className="text-sm font-bold text-brand-900">{value}</p>
+      <p className="text-[10px] text-gray-400">{label}</p>
+    </div>
+  );
+}
+
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-3">
+      <p className="text-[11px] text-gray-400">{label}</p>
+      <p className="text-sm font-semibold text-brand-900 mt-0.5">{value}</p>
     </div>
   );
 }

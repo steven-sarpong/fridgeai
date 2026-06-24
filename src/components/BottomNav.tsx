@@ -6,7 +6,7 @@ import { Home, ScanLine, Refrigerator, ChefHat, UtensilsCrossed, Settings } from
 
 const NAV_ITEMS = [
   { href: "/", label: "Start", icon: Home },
-  { href: "/scan", label: "Scan", icon: ScanLine, isCta: true },
+  { href: "/meals/scan", label: "Scan", icon: ScanLine, isCta: true },
   { href: "/fridge", label: "Kühlschrank", icon: Refrigerator },
   { href: "/recipes", label: "Rezepte", icon: ChefHat },
   { href: "/meals", label: "Mahlzeiten", icon: UtensilsCrossed },
