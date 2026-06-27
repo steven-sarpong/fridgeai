@@ -233,3 +233,5 @@ der API-Key verlässt nie den Browser.
 - Mengenangaben und Haltbarkeitsdaten aus dem KI-Scan sind Schätzungen und können im
   Scan-Review manuell korrigiert werden.
 - Challenges unterstützen aktuell ausschließlich XP-Ziele über einen festen Zeitraum.
+
+<!-- Deployed via Vercel + GitHub auto-deploy -->
