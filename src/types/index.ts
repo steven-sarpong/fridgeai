@@ -185,6 +185,16 @@ export interface UserProfile {
 
 // ---------- Training ----------
 
+export type ExerciseVisualCategory =
+  | "brust"
+  | "ruecken"
+  | "schulter"
+  | "arme"
+  | "beine"
+  | "gesaess"
+  | "bauch"
+  | "cardio";
+
 export interface WorkoutExercise {
   name: string;
   muscleGroup: string;
@@ -194,6 +204,7 @@ export interface WorkoutExercise {
   notes?: string; // kurze Ausführungsbeschreibung / Technik-Tipp
   imageUrl?: string; // optionales Beispielbild der Übung
   gifUrl?: string; // optionale Bewegungs-Animation der Übung
+  visualCategory?: ExerciseVisualCategory; // von der KI zugeordnete Video-Kategorie (siehe exercise-visuals.ts)
 }
 
 export interface WorkoutDay {

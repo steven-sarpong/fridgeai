@@ -323,7 +323,7 @@ function ExerciseVisual({ exercise }: { exercise: WorkoutExercise }) {
     );
   }
 
-  const { icon, gradient, videoUrl } = getExerciseVisual(exercise.muscleGroup);
+  const { icon, gradient, videoUrl } = getExerciseVisual(exercise.muscleGroup, exercise.visualCategory);
 
   if (!videoFailed) {
     return (

@@ -363,6 +363,23 @@ export async function generateCoachMessage(ctx: CoachContext) {
 
 // ---------- Trainingsplan-Generator ----------
 
+// Feste Kategorien, für die es generische Demo-Videos gibt (siehe
+// src/lib/exercise-visuals.ts, public/exercises/*.mp4). Die KI ordnet jede
+// Übung direkt beim Erstellen des Plans der inhaltlich passendsten Kategorie
+// zu, statt das nachträglich unzuverlässig per Text-Matching auf
+// "muscleGroup" zu raten (z.B. Trizeps-Übungen landeten sonst oft beim
+// Bizeps-Curl-Video, weil beides als "Arm" erkannt wurde).
+const VISUAL_CATEGORIES = [
+  "brust",
+  "ruecken",
+  "schulter",
+  "arme",
+  "beine",
+  "gesaess",
+  "bauch",
+  "cardio",
+] as const;
+
 const WORKOUT_SYSTEM_PROMPT = `Du bist ein erfahrener Personal Trainer, der individuelle Trainingspläne für eine Fitness-App erstellt.
 Antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format, ohne zusätzlichen Text:
 
@@ -372,7 +389,7 @@ Antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format, ohne zusätzli
       "name": "Tag 1 - Push",
       "focus": "Brust, Schulter, Trizeps",
       "exercises": [
-        { "name": "Bankdrücken", "muscleGroup": "Brust", "sets": 4, "reps": "8-10", "restSeconds": 90, "notes": "Langsame Ausführung, volle Range of Motion" }
+        { "name": "Bankdrücken", "muscleGroup": "Brust", "visualCategory": "brust", "sets": 4, "reps": "8-10", "restSeconds": 90, "notes": "Langsame Ausführung, volle Range of Motion" }
       ]
     }
   ]
@@ -387,7 +404,10 @@ Regeln:
   - Gesünder leben: moderates Ganzkörpertraining, 10-15 Wiederholungen, Fokus auf Technik und Nachhaltigkeit
 - Jeder Trainingstag soll 5-7 Übungen enthalten, sinnvoll nach Muskelgruppen sortiert
 - "restSeconds" ist die empfohlene Pause zwischen den Sätzen in Sekunden
-- Nutze deutsche Übungsnamen, die in jedem Fitnessstudio nachvollziehbar sind`;
+- Nutze deutsche Übungsnamen, die in jedem Fitnessstudio nachvollziehbar sind
+- "visualCategory" ist PFLICHT bei jeder Übung und MUSS exakt einer dieser Werte sein: ${VISUAL_CATEGORIES.join(", ")}.
+  Wähle die Kategorie danach, welche Bewegung die Übung tatsächlich zeigt (z.B. Trizeps-Dips -> "arme", Kniebeugen -> "beine",
+  Hüftstoß/Hip Thrust -> "gesaess", Bauchübungen -> "bauch", Ausdauer/HIIT/Konditionsübungen -> "cardio")`;
 
 export interface WorkoutPlanInput {
   goal: string;
