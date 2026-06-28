@@ -185,15 +185,41 @@ export interface UserProfile {
 
 // ---------- Training ----------
 
+// Jeder Wert entspricht genau einer konkreten Übung mit eigenem Demo-Video
+// (siehe public/exercises/*.mp4 und src/lib/exercise-visuals.ts) - die KI
+// wählt beim Erstellen des Trainingsplans die Übung, die der tatsächlich
+// generierten Übung am nächsten kommt, statt nur eine grobe Muskelgruppe.
 export type ExerciseVisualCategory =
-  | "brust"
-  | "ruecken"
-  | "schulter"
-  | "arme"
-  | "beine"
-  | "gesaess"
-  | "bauch"
-  | "cardio";
+  | "brust" // Bankdrücken
+  | "ruecken" // Latzug
+  | "schulter" // Schulterdrücken
+  | "arme" // Bizepscurls
+  | "beine" // Kniebeugen
+  | "gesaess" // Hip Thrust
+  | "bauch" // Crunches
+  | "cardio" // Jumping Jacks
+  | "trizeps_dips"
+  | "fliegende" // Butterfly / Chest Fly
+  | "seitheben" // Lateral Raises
+  | "kreuzheben" // Deadlift
+  | "klimmzuege" // Pull-ups
+  | "rudern" // Langhantelrudern
+  | "face_pulls"
+  | "beinpresse" // Leg Press
+  | "rumaenisches_kreuzheben" // Romanian Deadlift
+  | "wadenheben" // Calf Raises
+  | "ausfallschritte" // Lunges
+  | "liegestuetze" // Push-ups
+  | "plank"
+  | "russian_twists"
+  | "beinheben" // Leg Raises
+  | "burpees"
+  | "mountain_climbers"
+  | "seilspringen" // Jump Rope
+  | "trizeps_kickback"
+  | "enger_kabelzug" // Close-Grip Cable Pulldown/Row
+  | "goblet_squat"
+  | "step_ups";
 
 export interface WorkoutExercise {
   name: string;

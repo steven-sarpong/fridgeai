@@ -363,12 +363,12 @@ export async function generateCoachMessage(ctx: CoachContext) {
 
 // ---------- Trainingsplan-Generator ----------
 
-// Feste Kategorien, für die es generische Demo-Videos gibt (siehe
+// Feste Kategorien, für die es ein konkretes Demo-Video gibt (siehe
 // src/lib/exercise-visuals.ts, public/exercises/*.mp4). Die KI ordnet jede
-// Übung direkt beim Erstellen des Plans der inhaltlich passendsten Kategorie
-// zu, statt das nachträglich unzuverlässig per Text-Matching auf
-// "muscleGroup" zu raten (z.B. Trizeps-Übungen landeten sonst oft beim
-// Bizeps-Curl-Video, weil beides als "Arm" erkannt wurde).
+// Übung direkt beim Erstellen des Plans der Kategorie zu, die der tatsächlich
+// generierten Übung am nächsten kommt, statt das nachträglich unzuverlässig
+// per Text-Matching auf "muscleGroup" zu raten (z.B. Trizeps-Übungen landeten
+// sonst oft beim Bizeps-Curl-Video, weil beides als "Arm" erkannt wurde).
 const VISUAL_CATEGORIES = [
   "brust",
   "ruecken",
@@ -378,6 +378,28 @@ const VISUAL_CATEGORIES = [
   "gesaess",
   "bauch",
   "cardio",
+  "trizeps_dips",
+  "fliegende",
+  "seitheben",
+  "kreuzheben",
+  "klimmzuege",
+  "rudern",
+  "face_pulls",
+  "beinpresse",
+  "rumaenisches_kreuzheben",
+  "wadenheben",
+  "ausfallschritte",
+  "liegestuetze",
+  "plank",
+  "russian_twists",
+  "beinheben",
+  "burpees",
+  "mountain_climbers",
+  "seilspringen",
+  "trizeps_kickback",
+  "enger_kabelzug",
+  "goblet_squat",
+  "step_ups",
 ] as const;
 
 const WORKOUT_SYSTEM_PROMPT = `Du bist ein erfahrener Personal Trainer, der individuelle Trainingspläne für eine Fitness-App erstellt.
@@ -406,8 +428,17 @@ Regeln:
 - "restSeconds" ist die empfohlene Pause zwischen den Sätzen in Sekunden
 - Nutze deutsche Übungsnamen, die in jedem Fitnessstudio nachvollziehbar sind
 - "visualCategory" ist PFLICHT bei jeder Übung und MUSS exakt einer dieser Werte sein: ${VISUAL_CATEGORIES.join(", ")}.
-  Wähle die Kategorie danach, welche Bewegung die Übung tatsächlich zeigt (z.B. Trizeps-Dips -> "arme", Kniebeugen -> "beine",
-  Hüftstoß/Hip Thrust -> "gesaess", Bauchübungen -> "bauch", Ausdauer/HIIT/Konditionsübungen -> "cardio")`;
+  Wähle IMMER die spezifischste Kategorie, die zur tatsächlichen Übung passt (nicht nur die grobe Muskelgruppe). Nutze die
+  generischen Kategorien (brust, ruecken, schulter, arme, beine, gesaess, bauch, cardio) nur, wenn keine spezifischere
+  Kategorie passt. Beispiele: Bankdrücken -> "brust", Butterfly/Chest Fly -> "fliegende", Latzug -> "ruecken",
+  Klimmzüge -> "klimmzuege", Langhantelrudern -> "rudern", Face Pulls -> "face_pulls", Schulterdrücken -> "schulter",
+  Seitheben -> "seitheben", Bizepscurls -> "arme", Trizeps-Dips -> "trizeps_dips", Trizeps-Kickback -> "trizeps_kickback",
+  enger Kabelzug/Close-Grip Rudern -> "enger_kabelzug", Kniebeugen -> "beine", Goblet Squat -> "goblet_squat",
+  Beinpresse -> "beinpresse", Kreuzheben -> "kreuzheben", Rumänisches Kreuzheben -> "rumaenisches_kreuzheben",
+  Wadenheben -> "wadenheben", Ausfallschritte/Lunges -> "ausfallschritte", Step-Ups -> "step_ups",
+  Hüftstoß/Hip Thrust -> "gesaess", Liegestütze/Push-ups -> "liegestuetze", Crunches -> "bauch", Plank -> "plank",
+  Russian Twists -> "russian_twists", Beinheben/Leg Raises -> "beinheben", Burpees -> "burpees",
+  Mountain Climbers -> "mountain_climbers", Seilspringen -> "seilspringen", sonstiges Ausdauer/HIIT-Training -> "cardio"`;
 
 export interface WorkoutPlanInput {
   goal: string;
