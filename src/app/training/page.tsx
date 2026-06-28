@@ -307,6 +307,8 @@ const VISUAL_ICONS: Record<string, LucideIcon> = {
 };
 
 function ExerciseVisual({ exercise }: { exercise: WorkoutExercise }) {
+  const [videoFailed, setVideoFailed] = useState(false);
+
   if (exercise.gifUrl || exercise.imageUrl) {
     return (
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 relative">
@@ -320,7 +322,26 @@ function ExerciseVisual({ exercise }: { exercise: WorkoutExercise }) {
       </div>
     );
   }
-  const { icon, gradient } = getExerciseVisual(exercise.muscleGroup);
+
+  const { icon, gradient, videoUrl } = getExerciseVisual(exercise.muscleGroup);
+
+  if (!videoFailed) {
+    return (
+      <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 relative">
+        <video
+          src={videoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          aria-label={`Bewegungs-Demo für ${exercise.muscleGroup}`}
+          onError={() => setVideoFailed(true)}
+        />
+      </div>
+    );
+  }
+
   const Icon = VISUAL_ICONS[icon] ?? Dumbbell;
   return (
     <div
