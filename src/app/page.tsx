@@ -209,7 +209,7 @@ export default function DashboardPage() {
         {(rank || topChallenge) && (
           <Link
             href="/challenges"
-            className="card p-4 bg-gradient-to-br from-brand-900 to-brand-700 text-white"
+            className="block rounded-xl2 p-4 bg-gradient-to-br from-brand-900 to-brand-700 text-white shadow-card active:scale-[0.98] transition-transform"
           >
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold flex items-center gap-1.5">
@@ -217,17 +217,17 @@ export default function DashboardPage() {
               </p>
               <ChevronRight size={16} className="text-white/60" />
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
               {rank && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Crown size={16} className="text-amber-300" />
-                  <p className="text-sm">
+                  <p className="text-sm whitespace-nowrap">
                     Platz <span className="font-bold">{rank.position}</span> von {rank.total}
                   </p>
                 </div>
               )}
               {topChallenge && (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0 max-w-full">
                   <Swords size={15} className="text-white/70 shrink-0" />
                   <p className="text-sm truncate">{topChallenge.name}</p>
                 </div>
