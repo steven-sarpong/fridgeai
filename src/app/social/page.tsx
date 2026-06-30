@@ -2,19 +2,26 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, UserPlus, Check, X, Pencil, Sparkles, Trophy, Swords, ChevronRight } from "lucide-react";
+import {
+  Users, UserPlus, Check, X, Pencil, Sparkles, Trophy, Swords,
+  ChevronRight, Flame, Loader2,
+} from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import AvatarUpload, { getStoredAvatar } from "@/components/AvatarUpload";
 import { getProfile } from "@/lib/profile";
 import {
   acceptFriendRequest,
+  getFriendProfile,
   getFriends,
   getIncomingRequests,
   isSocialAvailable,
   removeFriendship,
   sendFriendRequest,
   setDisplayName,
+  FriendProfile,
 } from "@/lib/friends";
 import { getFriendsFeed } from "@/lib/activity-feed";
+import { BADGES } from "@/lib/gamification";
 import { ActivityFeedEntry, FriendListEntry, FriendRequestEntry } from "@/types";
 
 export default function SocialPage() {
@@ -24,6 +31,7 @@ export default function SocialPage() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   const [emailInput, setEmailInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -34,6 +42,9 @@ export default function SocialPage() {
   const [friends, setFriends] = useState<FriendListEntry[]>([]);
   const [feed, setFeed] = useState<ActivityFeedEntry[]>([]);
 
+  const [selectedFriend, setSelectedFriend] = useState<FriendProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
   async function reload() {
     const [reqs, frs, fd] = await Promise.all([getIncomingRequests(), getFriends(), getFriendsFeed()]);
     setRequests(reqs);
@@ -42,6 +53,7 @@ export default function SocialPage() {
   }
 
   useEffect(() => {
+    setAvatar(getStoredAvatar());
     (async () => {
       if (!isSocialAvailable()) {
         setAvailable(false);
@@ -101,6 +113,17 @@ export default function SocialPage() {
     await reload();
   }
 
+  async function openFriendProfile(userId: string) {
+    setProfileLoading(true);
+    setSelectedFriend(null);
+    try {
+      const profile = await getFriendProfile(userId);
+      setSelectedFriend(profile);
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
   if (!available) {
     return (
       <div>
@@ -140,42 +163,46 @@ export default function SocialPage() {
           <ChevronRight size={18} className="text-gray-400" />
         </Link>
 
-        {/* Anzeigename */}
+        {/* Eigenes Profil */}
         <div className="card p-4">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-brand-900">Dein Anzeigename</p>
-            {!editingName && (
-              <button
-                onClick={() => setEditingName(true)}
-                className="text-gray-400 hover:text-brand-600"
-                aria-label="Anzeigenamen bearbeiten"
-              >
-                <Pencil size={14} />
-              </button>
-            )}
-          </div>
-          {editingName ? (
-            <div className="flex gap-2 mt-2">
-              <input
-                className="input-field flex-1"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="z. B. Max"
-                maxLength={30}
-              />
-              <button
-                onClick={handleSaveName}
-                disabled={savingName || !nameInput.trim()}
-                className="btn-primary px-4"
-              >
-                Speichern
-              </button>
+          <p className="text-xs font-semibold text-gray-400 mb-3">Dein Profil</p>
+          <div className="flex items-center gap-4">
+            <AvatarUpload
+              value={avatar}
+              onChange={setAvatar}
+              initials={displayName || "?"}
+              size="sm"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                {editingName ? (
+                  <div className="flex gap-2 flex-1">
+                    <input
+                      autoFocus
+                      className="input-field flex-1 text-sm"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      placeholder="Anzeigename"
+                      maxLength={30}
+                    />
+                    <button onClick={handleSaveName} disabled={savingName || !nameInput.trim()} className="btn-primary px-3 text-sm">
+                      {savingName ? "…" : "OK"}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-brand-900 truncate">
+                      {displayName || "Noch kein Name"}
+                    </p>
+                    <button onClick={() => setEditingName(true)} className="text-gray-400" aria-label="Bearbeiten">
+                      <Pencil size={13} />
+                    </button>
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">Tippe auf das Bild um ein Foto hinzuzufügen</p>
             </div>
-          ) : (
-            <p className="text-sm text-gray-500">
-              {displayName || "Noch kein Name gesetzt – Freunde sehen sonst eine zufällige ID."}
-            </p>
-          )}
+          </div>
         </div>
 
         {/* Freund hinzufügen */}
@@ -212,18 +239,10 @@ export default function SocialPage() {
                     {r.displayName.slice(0, 1).toUpperCase()}
                   </span>
                   <p className="flex-1 text-sm font-medium text-brand-900">{r.displayName}</p>
-                  <button
-                    onClick={() => handleAccept(r.friendshipId)}
-                    className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center"
-                    aria-label="Annehmen"
-                  >
+                  <button onClick={() => handleAccept(r.friendshipId)} className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center" aria-label="Annehmen">
                     <Check size={15} />
                   </button>
-                  <button
-                    onClick={() => handleDecline(r.friendshipId)}
-                    className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center"
-                    aria-label="Ablehnen"
-                  >
+                  <button onClick={() => handleDecline(r.friendshipId)} className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center" aria-label="Ablehnen">
                     <X size={15} />
                   </button>
                 </div>
@@ -272,11 +291,16 @@ export default function SocialPage() {
             <div className="space-y-2">
               {friends.map((f) => (
                 <div key={f.friendshipId} className="card p-3 flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold text-sm shrink-0">
-                    {f.displayName.slice(0, 1).toUpperCase()}
-                  </span>
-                  <p className="flex-1 text-sm font-medium text-brand-900">{f.displayName}</p>
-                  <button onClick={() => handleRemoveFriend(f.friendshipId)} className="text-xs text-rose-500">
+                  <button
+                    onClick={() => openFriendProfile(f.userId)}
+                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                  >
+                    <span className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold text-sm shrink-0">
+                      {f.displayName.slice(0, 1).toUpperCase()}
+                    </span>
+                    <p className="text-sm font-medium text-brand-900 truncate">{f.displayName}</p>
+                  </button>
+                  <button onClick={() => handleRemoveFriend(f.friendshipId)} className="text-xs text-rose-400 shrink-0">
                     Entfernen
                   </button>
                 </div>
@@ -285,6 +309,90 @@ export default function SocialPage() {
           )}
         </div>
       </div>
+
+      {/* Friend profile loading indicator */}
+      {profileLoading && (
+        <div className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-brand-600" />
+        </div>
+      )}
+
+      {/* Friend profile bottom sheet */}
+      {selectedFriend && !profileLoading && (
+        <FriendProfileSheet
+          profile={selectedFriend}
+          onClose={() => setSelectedFriend(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function FriendProfileSheet({ profile, onClose }: { profile: FriendProfile; onClose: () => void }) {
+  const earnedBadges = BADGES.filter((b) => profile.unlockedBadgeIds.includes(b.id));
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/40" />
+      <div
+        className="relative bg-white rounded-t-2xl w-full max-w-md mx-auto p-5 pb-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start gap-4 mb-5">
+          <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+            <span className="text-2xl font-bold text-brand-600">
+              {profile.displayName.slice(0, 1).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-lg font-bold text-brand-900 truncate">{profile.displayName}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Dabei seit {new Date(profile.memberSince).toLocaleDateString("de-DE", {
+                month: "long", year: "numeric",
+              })}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 shrink-0 mt-1">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <StatChip icon={<Trophy size={14} className="text-brand-600" />} label="Level" value={String(profile.level)} />
+          <StatChip icon={<Sparkles size={14} className="text-amber-500" />} label="XP" value={String(profile.xp)} />
+          <StatChip icon={<Flame size={14} className="text-accent-500" />} label="Streak" value={`${profile.currentStreak}d`} />
+        </div>
+
+        {/* Badges */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 mb-2">
+            Abzeichen ({earnedBadges.length} / {BADGES.length})
+          </p>
+          {earnedBadges.length === 0 ? (
+            <p className="text-xs text-gray-400">Noch keine Abzeichen freigeschaltet.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {earnedBadges.map((b) => (
+                <div key={b.id} className="flex items-center gap-1.5 bg-brand-50 border border-brand-100 rounded-full px-3 py-1">
+                  <span className="text-xs font-medium text-brand-700">{b.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="bg-brand-50 rounded-xl p-3 text-center">
+      <div className="flex justify-center mb-1">{icon}</div>
+      <p className="text-base font-bold text-brand-900">{value}</p>
+      <p className="text-[10px] text-gray-400">{label}</p>
     </div>
   );
 }

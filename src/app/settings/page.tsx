@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { KeyRound, ShieldCheck, Trash2, Info, UserCog, ChevronRight, LogOut, Cloud, Users, Trophy } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import AvatarUpload, { getStoredAvatar } from "@/components/AvatarUpload";
+import { getProfile } from "@/lib/profile";
 import { resetAllData } from "@/lib/storage";
 import { clearProfile } from "@/lib/profile";
 import { signOut } from "@/lib/auth";
@@ -12,6 +14,13 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 export default function SettingsPage() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    setAvatar(getStoredAvatar());
+    getProfile().then((p) => setDisplayName(p?.displayName ?? ""));
+  }, []);
 
   async function handleReset() {
     await resetAllData();
@@ -31,6 +40,15 @@ export default function SettingsPage() {
       <PageHeader title="Einstellungen" subtitle="API-Key, Datenschutz & Daten" />
 
       <div className="px-5 space-y-4">
+        {/* Profilbild */}
+        <div className="card p-4 flex items-center gap-4">
+          <AvatarUpload value={avatar} onChange={setAvatar} initials={displayName || "?"} size="sm" />
+          <div>
+            <p className="text-sm font-semibold text-brand-900">{displayName || "Profil"}</p>
+            <p className="text-xs text-gray-400 mt-0.5">Tippe auf das Bild zum Ändern</p>
+          </div>
+        </div>
+
         <Link href="/onboarding" className="card p-4 flex items-center gap-3">
           <UserCog size={18} className="text-brand-600 shrink-0" />
           <div className="flex-1">

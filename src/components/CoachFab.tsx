@@ -27,11 +27,13 @@ interface Props {
 }
 
 const FAB_SIZE = 52;
-const NAV_HEIGHT = 72; // bottom nav clearance
-const TOP_OFFSET = 56; // align with top of PageHeader area
+const NAV_HEIGHT = 72;
+const TOP_OFFSET = 56;
+const INTRO_KEY = "forma_coach_intro_seen";
 
 export default function CoachFab({ coachMessage, coachLoading, onRefresh, context }: Props) {
   const [open, setOpen] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number }>({ top: TOP_OFFSET, right: 16 });
   const [dragging, setDragging] = useState(false);
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -40,6 +42,21 @@ export default function CoachFab({ coachMessage, coachLoading, onRefresh, contex
   const dragRef = useRef<{ startX: number; startY: number; startTop: number; startRight: number; moved: boolean } | null>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Intro bubble on first visit
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!localStorage.getItem(INTRO_KEY)) {
+      const t = setTimeout(() => setShowIntro(true), 900);
+      const t2 = setTimeout(() => dismissIntro(), 6000);
+      return () => { clearTimeout(t); clearTimeout(t2); };
+    }
+  }, []);
+
+  function dismissIntro() {
+    setShowIntro(false);
+    if (typeof window !== "undefined") localStorage.setItem(INTRO_KEY, "1");
+  }
 
   // Seed chat with daily message when it arrives
   useEffect(() => {
@@ -214,8 +231,18 @@ export default function CoachFab({ coachMessage, coachLoading, onRefresh, contex
         className="select-none"
         aria-label="AI Coach"
       >
+        {showIntro && (
+          <div
+            className="absolute bottom-[60px] right-0 w-56 bg-white rounded-2xl rounded-br-sm shadow-cardHover p-3 text-xs text-brand-900 leading-relaxed border border-brand-100"
+            onClick={(e) => { e.stopPropagation(); dismissIntro(); }}
+          >
+            <p className="font-semibold mb-1">👋 Hallo! Ich bin dein AI Coach.</p>
+            <p className="text-gray-500">Stell mir Fragen zu Training & Ernährung – und ich lasse mich überall hin schieben!</p>
+            <span className="absolute -bottom-1.5 right-4 w-3 h-3 bg-white border-r border-b border-brand-100 rotate-45" />
+          </div>
+        )}
         <div
-          className={`w-[${FAB_SIZE}px] h-[${FAB_SIZE}px] w-[52px] h-[52px] rounded-full bg-brand-600 shadow-cardHover flex items-center justify-center text-white transition-transform ${dragging ? "scale-110" : "active:scale-95"}`}
+          className={`w-[52px] h-[52px] rounded-full bg-brand-600 shadow-cardHover flex items-center justify-center text-white transition-transform ${dragging ? "scale-110" : "active:scale-95"}`}
         >
           {coachLoading && !open ? (
             <Loader2 size={20} className="animate-spin" />

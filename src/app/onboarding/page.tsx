@@ -21,6 +21,7 @@ import {
   UserProfile,
 } from "@/types";
 import { calculateNutritionGoals, getProfile, saveProfile } from "@/lib/profile";
+import AvatarUpload, { getStoredAvatar } from "@/components/AvatarUpload";
 
 type FormState = {
   displayName: string;
@@ -100,6 +101,9 @@ export default function OnboardingPage() {
   const [form, setForm] = useState<FormState>(emptyState);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => { setAvatar(getStoredAvatar()); }, []);
 
   useEffect(() => {
     getProfile().then((existing) => {
@@ -238,6 +242,15 @@ export default function OnboardingPage() {
       <div className="px-5 space-y-5 pb-6">
         {step === 0 && (
           <div className="card p-4 space-y-4">
+            <div className="flex flex-col items-center py-2">
+              <AvatarUpload
+                value={avatar}
+                onChange={setAvatar}
+                initials={form.displayName || "?"}
+                size="lg"
+              />
+              <p className="text-xs text-gray-400 mt-2">Profilbild (optional)</p>
+            </div>
             <div>
               <label className="text-sm font-semibold text-gray-500">Wie heißt du?</label>
               <input
