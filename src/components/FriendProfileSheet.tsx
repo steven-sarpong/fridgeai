@@ -37,10 +37,15 @@ export default function FriendProfileSheet({ userId, displayName, onClose }: Pro
         ) : (
           <>
             <div className="flex items-start gap-4 mb-5">
-              <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
-                <span className="text-2xl font-bold text-brand-600">
-                  {displayName.slice(0, 1).toUpperCase()}
-                </span>
+              <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center shrink-0 overflow-hidden border-2 border-brand-100">
+                {profile?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold text-brand-600">
+                    {displayName.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-lg font-bold text-brand-900 truncate">{profile?.displayName ?? displayName}</p>

@@ -208,6 +208,9 @@ create trigger user_stats_set_updated_at
 -- Sichtbarer Anzeigename für Social-Features (Freunde, Leaderboard).
 alter table public.profiles add column if not exists display_name text;
 
+-- Profilbild als base64/WebP Data-URL (lokal komprimiert, max ~300 KB).
+alter table public.profiles add column if not exists avatar_url text;
+
 create table if not exists public.friendships (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,

@@ -28,7 +28,7 @@ interface Props {
 
 const FAB_SIZE = 52;
 const NAV_HEIGHT = 72;
-const DEFAULT_TOP = 162; // center of the gap between header and first card
+const DEFAULT_RIGHT = 16;
 const POS_KEY = "forma_coach_pos";
 const INTRO_KEY = "forma_coach_intro_seen";
 const PROACTIVE_KEY = "forma_coach_last_bubble";
@@ -49,14 +49,15 @@ export default function CoachFab({ coachMessage, coachLoading, onRefresh, contex
   const [showIntro, setShowIntro] = useState(false);
   const [proactiveTip, setProactiveTip] = useState<string | null>(null);
   const [pos, setPos] = useState<{ top: number; right: number }>(() => {
-    if (typeof window === "undefined") return { top: DEFAULT_TOP, right: 16 };
+    if (typeof window === "undefined") return { top: 600, right: DEFAULT_RIGHT };
     try {
       const saved = localStorage.getItem(POS_KEY);
       if (saved) return JSON.parse(saved);
     } catch { /* ignore */ }
+    // Default: bottom-right, above nav bar
     return {
-      top: DEFAULT_TOP,
-      right: Math.round(window.innerWidth / 2 - FAB_SIZE / 2),
+      top: window.innerHeight - NAV_HEIGHT - FAB_SIZE - 16,
+      right: DEFAULT_RIGHT,
     };
   });
   const [dragging, setDragging] = useState(false);

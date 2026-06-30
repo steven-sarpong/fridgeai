@@ -159,6 +159,7 @@ export async function removeFriendship(friendshipId: string): Promise<void> {
 export interface FriendProfile {
   userId: string;
   displayName: string;
+  avatarUrl: string | null;
   memberSince: string;
   xp: number;
   level: number;
@@ -170,26 +171,34 @@ export async function getFriendProfile(userId: string): Promise<FriendProfile> {
   const supabase = getSupabaseClient();
 
   const [profileRes, statsRes] = await Promise.all([
-    supabase.from("profiles").select("display_name, created_at").eq("user_id", userId).maybeSingle(),
+    supabase.from("profiles").select("display_name, created_at, avatar_url").eq("user_id", userId).maybeSingle(),
     supabase.from("user_stats").select("xp, current_streak, unlocked_badge_ids").eq("user_id", userId).maybeSingle(),
   ]);
 
-  const displayName =
-    (profileRes.data as { display_name: string | null; created_at: string } | null)?.display_name?.trim() ||
-    fallbackName(userId);
-  const memberSince =
-    (profileRes.data as { display_name: string | null; created_at: string } | null)?.created_at ?? new Date().toISOString();
+  const profileData = profileRes.data as { display_name: string | null; created_at: string; avatar_url: string | null } | null;
+  const displayName = profileData?.display_name?.trim() || fallbackName(userId);
+  const memberSince = profileData?.created_at ?? new Date().toISOString();
   const stats = statsRes.data as { xp: number; current_streak: number; unlocked_badge_ids: string[] } | null;
 
   return {
     userId,
     displayName,
+    avatarUrl: profileData?.avatar_url ?? null,
     memberSince,
     xp: stats?.xp ?? 0,
     level: calculateLevel(stats?.xp ?? 0).level,
     currentStreak: stats?.current_streak ?? 0,
     unlockedBadgeIds: stats?.unlocked_badge_ids ?? [],
   };
+}
+
+export async function saveAvatarToProfile(avatarDataUrl: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = getSupabaseClient();
+  const { data } = await supabase.auth.getUser();
+  const userId = data.user?.id;
+  if (!userId) return;
+  await supabase.from("profiles").update({ avatar_url: avatarDataUrl }).eq("user_id", userId);
 }
 
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {

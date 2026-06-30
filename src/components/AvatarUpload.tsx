@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { X, Upload, Camera } from "lucide-react";
+import { saveAvatarToProfile } from "@/lib/friends";
 
 const AVATAR_KEY = "forma_avatar";
 const MAX_SIZE = 1200;
@@ -56,6 +57,7 @@ export default function AvatarUpload({ value, onChange, initials = "?", size = "
       const dataUrl = await compressImage(file);
       localStorage.setItem(AVATAR_KEY, dataUrl);
       onChange(dataUrl);
+      saveAvatarToProfile(dataUrl).catch(() => {/* no-op if not logged in */});
     } catch {
       // silently ignore
     }
