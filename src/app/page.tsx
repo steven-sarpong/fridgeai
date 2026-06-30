@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Flame, Beef, ChevronRight, AlertTriangle, Droplet, Wheat,
-  Scale, Dumbbell, Trophy, Crown, Swords,
+  Scale, Dumbbell, Trophy, Crown, Swords, Package,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import CoachFab from "@/components/CoachFab";
@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [rank, setRank] = useState<{ position: number; total: number } | null>(null);
   const [topChallenge, setTopChallenge] = useState<ChallengeSummary | null>(null);
   const [fridgeCategories, setFridgeCategories] = useState<{ label: string; count: number }[]>([]);
+  const [fridgeExpanded, setFridgeExpanded] = useState(false);
   const profileRef = useRef<UserProfile | null>(null);
   const goalsRef = useRef<NutritionGoals | null>(null);
   const totalsRef = useRef({ calories: 0, protein: 0, carbs: 0, fat: 0 });
@@ -200,19 +201,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Kühlschrank-Chart */}
-        {fridgeCategories.length > 0 && (
-          <Link href="/fridge" className="card p-4 block active:scale-[0.98] transition-transform">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-brand-900">Kühlschrank</p>
-              <p className="text-xs text-gray-400 flex items-center gap-1">
-                {fridgeCategories.reduce((s, c) => s + c.count, 0)} Produkte <ChevronRight size={13} />
-              </p>
-            </div>
-            <FridgeChart data={fridgeCategories} />
-          </Link>
-        )}
-
         {/* Challenges & Leaderboard */}
         {(rank || topChallenge) && (
           <Link
@@ -281,6 +269,64 @@ export default function DashboardPage() {
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </Link>
+        )}
+
+        {/* Kühlschrank */}
+        {fridgeCategories.length > 0 && (
+          <div className="card overflow-hidden">
+            <button
+              onClick={() => setFridgeExpanded((v) => !v)}
+              className="w-full flex items-center gap-3 p-4 text-left"
+            >
+              <span className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+                <Package size={18} className="text-brand-600" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-brand-900">Kühlschrank</p>
+                <div className="mt-1.5 h-1.5 rounded-full bg-brand-50 overflow-hidden">
+                  <div className="h-full bg-brand-400 transition-all" style={{ width: "100%" }} />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {fridgeCategories.reduce((s, c) => s + c.count, 0)} Produkte · {fridgeCategories.length} Kategorien
+                </p>
+              </div>
+              <ChevronRight
+                size={18}
+                className={`text-gray-400 transition-transform shrink-0 ${fridgeExpanded ? "rotate-90" : ""}`}
+              />
+            </button>
+            {fridgeExpanded && (
+              <div className="px-4 pb-4 border-t border-brand-50">
+                <div className="pt-3 space-y-2">
+                  {fridgeCategories.map(({ label, count }, i) => {
+                    const max = fridgeCategories[0].count;
+                    const colors = [
+                      "bg-brand-500","bg-emerald-400","bg-amber-400",
+                      "bg-rose-400","bg-sky-400","bg-purple-400","bg-orange-400",
+                    ];
+                    return (
+                      <div key={label} className="flex items-center gap-2">
+                        <p className="text-[11px] text-gray-500 w-24 truncate shrink-0">{label}</p>
+                        <div className="flex-1 h-3 bg-brand-50 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${colors[i % colors.length]} rounded-full transition-all`}
+                            style={{ width: `${(count / max) * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] font-semibold text-brand-700 w-4 text-right shrink-0">{count}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <a
+                  href="/fridge"
+                  className="mt-4 flex items-center justify-center gap-1.5 text-xs text-brand-600 font-medium"
+                >
+                  Kühlschrank öffnen <ChevronRight size={13} />
+                </a>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Training */}
@@ -359,27 +405,3 @@ function MacroStat({
   );
 }
 
-const BAR_COLORS = [
-  "bg-brand-500", "bg-emerald-400", "bg-amber-400",
-  "bg-rose-400", "bg-sky-400", "bg-purple-400", "bg-orange-400",
-];
-
-function FridgeChart({ data }: { data: { label: string; count: number }[] }) {
-  const max = Math.max(...data.map((d) => d.count), 1);
-  return (
-    <div className="space-y-2">
-      {data.map(({ label, count }, i) => (
-        <div key={label} className="flex items-center gap-2">
-          <p className="text-[11px] text-gray-500 w-24 truncate shrink-0">{label}</p>
-          <div className="flex-1 h-4 bg-brand-50 rounded-full overflow-hidden">
-            <div
-              className={`h-full ${BAR_COLORS[i % BAR_COLORS.length]} rounded-full transition-all`}
-              style={{ width: `${(count / max) * 100}%` }}
-            />
-          </div>
-          <p className="text-[11px] font-semibold text-brand-700 w-5 text-right shrink-0">{count}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
